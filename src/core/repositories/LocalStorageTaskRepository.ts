@@ -54,11 +54,35 @@ export class LocalStorageTaskRepository implements ITaskRepository {
     // Migrate: Fix any tasks missing required fields
     let needsSave = false
     const fixedTasks = tasks.map(task => {
+      let modified = false
+      const fixed = { ...task }
+      
+      // Fix missing title
       if (!task.title || task.title === 'undefined') {
-        needsSave = true
-        return { ...task, title: task.title || 'Untitled Task' }
+        fixed.title = task.title || 'Untitled Task'
+        modified = true
       }
-      return task
+      
+      // Migrate priority to taskType if needed
+      if ((task as any).priority && !task.taskType) {
+        const priorityToType: Record<string, Task['taskType']> = {
+          'high': 'work',
+          'medium': 'work',
+          'low': 'work',
+        }
+        fixed.taskType = priorityToType[(task as any).priority] || 'work'
+        delete (fixed as any).priority
+        modified = true
+      } else if (!task.taskType) {
+        fixed.taskType = 'work'
+        modified = true
+      }
+      
+      if (modified) {
+        needsSave = true
+      }
+      
+      return fixed
     })
     
     if (needsSave) {
@@ -84,7 +108,7 @@ export class LocalStorageTaskRepository implements ITaskRepository {
       description: dto.description,
       completed: false,
       dueDate: dto.dueDate,
-      priority: dto.priority || 'medium',
+      taskType: dto.taskType || 'work',
       projectId: dto.projectId,
       tags: dto.tags || [],
       createdAt: now,

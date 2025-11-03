@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core'
 import { TaskRepositoryProvider } from './core/repositories/TaskRepositoryContext'
+import { TaskTypeRepositoryProvider } from './core/repositories/TaskTypeRepositoryContext'
 import { TaskList, CreateTaskForm } from './features/tasks'
 import { useTasks } from './features/tasks'
 import { PlannerPanel } from './features/planner'
@@ -106,8 +107,10 @@ function AppContent() {
     const draggedTaskId = activeId.toString().replace('task-', '')
     const draggedTask = tasks.find(t => t.id === draggedTaskId)
 
+    // Adjust for padding at top of timeline
+    const adjustedY = clampedY - 16
     const scheduledStart = timeFromPosition(
-      clampedY,
+      Math.max(0, adjustedY),
       dropZoneData.selectedDate,
       pixelsPerMinute,
       dropZoneData.workStartHour
@@ -148,7 +151,7 @@ function AppContent() {
     })
     
     setDropIndicator({ 
-      y: clampedY, 
+      y: clampedY, // Keep original Y for visual indicator
       time: timeStr,
       hasOverlap, // Add overlap flag to indicator
     })
@@ -183,8 +186,10 @@ function AppContent() {
             return
           }
           
+          // Adjust for padding at top of timeline
+          const adjustedY = dropIndicator.y - 16
           const scheduledStart = timeFromPosition(
-            dropIndicator.y,
+            Math.max(0, adjustedY),
             dropZoneData.selectedDate,
             dropZoneData.pixelsPerMinute || 1,
             dropZoneData.workStartHour
@@ -245,8 +250,10 @@ function AppContent() {
             clampedY: clampedY.toFixed(2),
           })
           
+          // Adjust for padding at top of timeline
+          const adjustedY = clampedY - 16
           const scheduledStart = timeFromPosition(
-            clampedY,
+            Math.max(0, adjustedY),
             dropZoneData.selectedDate,
             pixelsPerMinute,
             dropZoneData.workStartHour
@@ -331,7 +338,9 @@ function App() {
       }}
     >
       <TaskRepositoryProvider>
-        <AppContent />
+        <TaskTypeRepositoryProvider>
+          <AppContent />
+        </TaskTypeRepositoryProvider>
       </TaskRepositoryProvider>
     </ErrorBoundary>
   )

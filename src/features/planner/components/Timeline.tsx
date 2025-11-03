@@ -74,7 +74,7 @@ export function Timeline({
       <div
         ref={combinedRef}
         className={`relative ${isOver ? 'bg-blue-50' : ''}`}
-        style={{ height: `${totalHeight}px`, minHeight: `${totalHeight}px` }}
+        style={{ height: `${totalHeight}px`, minHeight: `${totalHeight}px`, paddingTop: '16px' }}
         onDrop={(e) => {
           e.preventDefault()
           // Handle is managed by DndContext
@@ -82,7 +82,7 @@ export function Timeline({
       >
         {/* Time grid lines */}
         {timeSlots.map((hour) => {
-          const topPx = (hour - workStartHour) * 60 * pixelsPerMinute
+          const topPx = (hour - workStartHour) * 60 * pixelsPerMinute + 16 // Add padding at top
           return (
             <div
               key={hour}
@@ -99,7 +99,7 @@ export function Timeline({
         {/* Half-hour grid lines (lighter) */}
         {timeSlots.map((hour) => {
           if (hour === workEndHour - 1) return null
-          const topPx = (hour + 0.5 - workStartHour) * 60 * pixelsPerMinute
+          const topPx = (hour + 0.5 - workStartHour) * 60 * pixelsPerMinute + 16 // Add padding at top
           return (
             <div
               key={`${hour}-half`}
@@ -119,7 +119,7 @@ export function Timeline({
           const totalTime = workStartHour + (time - workStartHour)
           return totalTime < workEndHour
         }).map((time) => {
-          const topPx = (time - workStartHour) * 60 * pixelsPerMinute
+          const topPx = (time - workStartHour) * 60 * pixelsPerMinute + 16 // Add padding at top
           const hour = Math.floor(time)
           const minute = (time % 1) * 60
           return (

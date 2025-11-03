@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Input, Textarea, Button, Card } from '../../../shared/components/ui'
-import type { CreateTaskDto, TaskPriority } from '../../../core/entities/Task'
+import type { CreateTaskDto } from '../../../core/entities/Task'
+import { useTaskTypes } from '../../task-types/hooks/useTaskTypes'
+import { Plus } from 'lucide-react'
+import { TaskTypeManager } from '../../task-types'
 
 interface CreateTaskFormProps {
   onSubmit: (dto: CreateTaskDto) => Promise<void>
@@ -8,11 +11,24 @@ interface CreateTaskFormProps {
 }
 
 export function CreateTaskForm({ onSubmit, isLoading = false }: CreateTaskFormProps) {
+  const { taskTypes } = useTaskTypes()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<TaskPriority>('medium')
+  const [taskType, setTaskType] = useState<string>('work')
   const [estimateMinutes, setEstimateMinutes] = useState<number>(30)
   const [error, setError] = useState<string | null>(null)
+  const [showTaskTypeManager, setShowTaskTypeManager] = useState(false)
+
+  // Update task type when task types load
+  useEffect(() => {
+    if (taskTypes.length > 0) {
+      // Only set if current type doesn't exist in the list
+      const typeExists = taskTypes.some(t => t.name === taskType)
+      if (!typeExists) {
+        setTaskType(taskTypes[0].name)
+      }
+    }
+  }, [taskTypes])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,14 +48,16 @@ export function CreateTaskForm({ onSubmit, isLoading = false }: CreateTaskFormPr
       await onSubmit({
         title: title.trim(),
         description: description.trim() || undefined,
-        priority,
+        taskType,
         estimateMinutes,
       })
       
       // Reset form on success
       setTitle('')
       setDescription('')
-      setPriority('medium')
+      if (taskTypes.length > 0) {
+        setTaskType(taskTypes[0].name)
+      }
       setEstimateMinutes(30)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create task')
@@ -75,25 +93,38 @@ export function CreateTaskForm({ onSubmit, isLoading = false }: CreateTaskFormPr
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Priority
+              Type
             </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as TaskPriority)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              disabled={isLoading}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={taskType}
+                onChange={(e) => setTaskType(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                disabled={isLoading}
+              >
+                {taskTypes.map((type) => (
+                  <option key={type.id} value={type.name}>
+                    {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowTaskTypeManager(true)}
+                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                disabled={isLoading}
+                title="Manage task types"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Estimate (minutes)
             </label>
-            <div className="flex gap-2 mb-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               {presetMinutes.map((m) => (
                 <button
                   key={m}
@@ -110,25 +141,6 @@ export function CreateTaskForm({ onSubmit, isLoading = false }: CreateTaskFormPr
                 </button>
               ))}
             </div>
-            <input
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={Number.isFinite(estimateMinutes) ? estimateMinutes : ''}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10)
-                if (Number.isNaN(val)) {
-                  setEstimateMinutes(NaN as unknown as number)
-                } else {
-                  setEstimateMinutes(val)
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="e.g., 30"
-              disabled={isLoading}
-            />
           </div>
         </div>
 
@@ -136,6 +148,12 @@ export function CreateTaskForm({ onSubmit, isLoading = false }: CreateTaskFormPr
           {isLoading ? 'Creating...' : 'Create Task'}
         </Button>
       </form>
+
+      {showTaskTypeManager && (
+        <div className="mt-4">
+          <TaskTypeManager onClose={() => setShowTaskTypeManager(false)} />
+        </div>
+      )}
     </Card>
   )
 }

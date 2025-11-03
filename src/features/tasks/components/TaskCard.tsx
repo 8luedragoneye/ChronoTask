@@ -2,6 +2,8 @@ import { useDraggable } from '@dnd-kit/core'
 import { Checkbox, Button, Card } from '../../../shared/components/ui'
 import type { Task } from '../../../core/entities/Task'
 import { Trash2, GripVertical } from 'lucide-react'
+import { useTaskTypeRepository } from '../../../core/repositories/TaskTypeRepositoryContext'
+import { useState, useEffect } from 'react'
 
 interface TaskCardProps {
   task: Task
@@ -10,6 +12,21 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
+  const repository = useTaskTypeRepository()
+  const [taskTypeEntity, setTaskTypeEntity] = useState<any>(null)
+
+  useEffect(() => {
+    if (task.taskType) {
+      repository.getByName(task.taskType).then(setTaskTypeEntity).catch(() => {
+        // Fallback to default if not found
+        repository.getAll().then(types => {
+          const defaultType = types.find(t => t.name === 'work') || types[0]
+          setTaskTypeEntity(defaultType)
+        })
+      })
+    }
+  }, [task.taskType])
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `task-${task.id}`,
     data: {
@@ -29,9 +46,7 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
   }
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      onDelete(task.id)
-    }
+    onDelete(task.id)
   }
 
   return (
@@ -78,20 +93,14 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
           )}
 
           <div className="flex items-center gap-2 mt-2">
-            {task.priority && (
+            {task.taskType && taskTypeEntity && (
               <span
-                className={`
-                  px-2 py-0.5 text-xs font-medium rounded
-                  ${
-                    task.priority === 'high'
-                      ? 'bg-red-100 text-red-800'
-                      : task.priority === 'medium'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-blue-100 text-blue-800'
-                  }
-                `}
+                className="px-2 py-0.5 text-xs font-medium rounded text-gray-900"
+                style={{
+                  backgroundColor: `${taskTypeEntity.color}20`,
+                }}
               >
-                {task.priority}
+                {taskTypeEntity.name.charAt(0).toUpperCase() + taskTypeEntity.name.slice(1)}
               </span>
             )}
             

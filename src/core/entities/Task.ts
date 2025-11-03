@@ -8,20 +8,21 @@ export interface Task extends BaseEntity {
   description?: string
   completed: boolean
   dueDate?: Date
-  priority?: TaskPriority
+  taskType?: TaskType
   projectId?: ID
   tags?: string[]
   estimateMinutes: number
   scheduledStart?: Date
 }
 
-export type TaskPriority = 'low' | 'medium' | 'high'
+// TaskType is now a string identifier that can reference either default types or custom types
+export type TaskType = string
 
 export interface CreateTaskDto {
   title: string
   description?: string
   dueDate?: Date
-  priority?: TaskPriority
+  taskType?: TaskType
   projectId?: ID
   tags?: string[]
   estimateMinutes?: number
@@ -33,7 +34,7 @@ export interface UpdateTaskDto {
   description?: string
   completed?: boolean
   dueDate?: Date
-  priority?: TaskPriority
+  taskType?: TaskType
   projectId?: ID
   tags?: string[]
   estimateMinutes?: number
