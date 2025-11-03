@@ -26,6 +26,7 @@ export class LocalStorageTaskRepository implements ITaskRepository {
 
         return {
           ...task,
+          title: task.title || 'Untitled Task', // Ensure title always exists
           createdAt,
           updatedAt,
           dueDate,
@@ -49,7 +50,23 @@ export class LocalStorageTaskRepository implements ITaskRepository {
   }
 
   async getAll(): Promise<Task[]> {
-    return this.getTasksFromStorage()
+    const tasks = this.getTasksFromStorage()
+    // Migrate: Fix any tasks missing required fields
+    let needsSave = false
+    const fixedTasks = tasks.map(task => {
+      if (!task.title || task.title === 'undefined') {
+        needsSave = true
+        return { ...task, title: task.title || 'Untitled Task' }
+      }
+      return task
+    })
+    
+    if (needsSave) {
+      this.saveTasksToStorage(fixedTasks)
+      return fixedTasks
+    }
+    
+    return tasks
   }
 
   async getById(id: ID): Promise<Task | null> {
@@ -92,13 +109,22 @@ export class LocalStorageTaskRepository implements ITaskRepository {
     const updatedTask: Task = {
       ...tasks[index],
       ...updates,
+      // Preserve title if not being updated
+      title: updates.title !== undefined ? updates.title : tasks[index].title,
+      // Preserve estimateMinutes if not being updated
       estimateMinutes: updates.estimateMinutes !== undefined
         ? (updates.estimateMinutes > 0 ? updates.estimateMinutes : tasks[index].estimateMinutes)
         : tasks[index].estimateMinutes,
+      // Preserve scheduledStart if not being updated
       scheduledStart: updates.scheduledStart !== undefined
         ? updates.scheduledStart
         : tasks[index].scheduledStart,
       updatedAt: new Date(),
+    }
+    
+    // Ensure required fields are always present
+    if (!updatedTask.title) {
+      updatedTask.title = tasks[index].title || 'Untitled Task'
     }
 
     tasks[index] = updatedTask

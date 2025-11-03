@@ -47,9 +47,23 @@ export function TaskList() {
     )
   }
 
+  // Filter out tasks that are scheduled on the planner
+  const unscheduledTasks = tasks.filter((task) => !task.scheduledStart)
+
+  if (unscheduledTasks.length === 0 && tasks.length > 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500 text-lg">All tasks are scheduled</p>
+        <p className="text-gray-400 text-sm mt-2">
+          Tasks on the planner won't appear here. Remove them from the planner to see them again.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
-      {tasks.map((task) => (
+      {unscheduledTasks.map((task) => (
         <TaskCard
           key={task.id}
           task={task}

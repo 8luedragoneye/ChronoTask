@@ -4,7 +4,7 @@ import { TaskRepositoryProvider } from './core/repositories/TaskRepositoryContex
 import { TaskList, CreateTaskForm } from './features/tasks'
 import { useTasks } from './features/tasks'
 import { PlannerPanel } from './features/planner'
-import { timeFromPosition } from './features/planner/utils/time'
+import { timeFromPosition, tasksOverlap } from './features/planner/utils/time'
 import { ErrorBoundary } from 'react-error-boundary'
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
@@ -31,10 +31,10 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
 }
 
 function AppContent() {
-  const { createTask, isLoading, tasks, updateTask } = useTasks()
+  const { createTask, isLoading, tasks, updateTask, deleteTask } = useTasks()
   const [activeId, setActiveId] = useState<string | null>(null)
   const [lastMouseY, setLastMouseY] = useState<number | null>(null)
-  const [dropIndicator, setDropIndicator] = useState<{ y: number; time: string } | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<{ y: number; time: string; hasOverlap?: boolean } | null>(null)
   const initialMouseY = useRef<number | null>(null)
   
   const sensors = useSensors(
@@ -101,17 +101,11 @@ function AppContent() {
     const maxY = (workEndHour - dropZoneData.workStartHour) * 60 * pixelsPerMinute
     const clampedY = Math.max(0, Math.min(relativeY, maxY))
     
-    // Debug logging
-    if (Math.random() < 0.1) {
-      console.log('Drag move:', {
-        mouseY: mouseY.toFixed(1),
-        deltaY: event.delta?.y?.toFixed(1),
-        timelineTop: timelineBounds.top.toFixed(1),
-        relativeY: relativeY.toFixed(1),
-        clampedY: clampedY.toFixed(1),
-      })
-    }
-    
+    // Get the dragged task
+    const activeId = event.active.id as string
+    const draggedTaskId = activeId.toString().replace('task-', '')
+    const draggedTask = tasks.find(t => t.id === draggedTaskId)
+
     const scheduledStart = timeFromPosition(
       clampedY,
       dropZoneData.selectedDate,
@@ -119,14 +113,46 @@ function AppContent() {
       dropZoneData.workStartHour
     )
     
+    // Check for overlaps with existing scheduled tasks
+    let hasOverlap = false
+    if (draggedTask) {
+      const draggedDuration = draggedTask.estimateMinutes || 30
+      
+      // Get all scheduled tasks for the selected date (excluding the dragged task itself)
+      const scheduledTasks = tasks.filter((task) => {
+        if (!task.scheduledStart || task.id === draggedTaskId) return false
+        const taskDate = task.scheduledStart
+        return (
+          taskDate.getFullYear() === dropZoneData.selectedDate.getFullYear() &&
+          taskDate.getMonth() === dropZoneData.selectedDate.getMonth() &&
+          taskDate.getDate() === dropZoneData.selectedDate.getDate()
+        )
+      })
+      
+      // Check if new position overlaps with any existing task
+      hasOverlap = scheduledTasks.some((task) => {
+        if (!task.scheduledStart) return false
+        return tasksOverlap(
+          scheduledStart,
+          draggedDuration,
+          task.scheduledStart,
+          task.estimateMinutes || 30
+        )
+      })
+    }
+    
     const timeStr = scheduledStart.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     })
     
-    setDropIndicator({ y: clampedY, time: timeStr })
-  }, [])
+    setDropIndicator({ 
+      y: clampedY, 
+      time: timeStr,
+      hasOverlap, // Add overlap flag to indicator
+    })
+  }, [tasks, lastMouseY])
 
   const handleDragEnd = useCallback((event: any) => {
     const { active, over } = event
@@ -149,6 +175,14 @@ function AppContent() {
       if (timelineContainer) {
         // Use dropIndicator if available (calculated during drag with correct position)
         if (dropIndicator) {
+          // Prevent scheduling if there's an overlap
+          if (dropIndicator.hasOverlap) {
+            console.log('Cannot schedule: task overlaps with existing task')
+            setLastMouseY(null)
+            setDropIndicator(null)
+            return
+          }
+          
           const scheduledStart = timeFromPosition(
             dropIndicator.y,
             dropZoneData.selectedDate,
@@ -156,11 +190,40 @@ function AppContent() {
             dropZoneData.workStartHour
           )
           
-          console.log('Using dropIndicator:', {
-            dropIndicatorY: dropIndicator.y,
-            dropIndicatorTime: dropIndicator.time,
-            calculatedTime: scheduledStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-          })
+          // Double-check for overlaps before scheduling
+          const draggedTask = tasks.find(t => t.id === draggedTaskId)
+          if (draggedTask) {
+            const draggedDuration = draggedTask.estimateMinutes || 30
+            
+            // Get all scheduled tasks for the selected date (excluding the dragged task itself)
+            const scheduledTasks = tasks.filter((task) => {
+              if (!task.scheduledStart || task.id === draggedTaskId) return false
+              const taskDate = task.scheduledStart
+              return (
+                taskDate.getFullYear() === dropZoneData.selectedDate.getFullYear() &&
+                taskDate.getMonth() === dropZoneData.selectedDate.getMonth() &&
+                taskDate.getDate() === dropZoneData.selectedDate.getDate()
+              )
+            })
+            
+            // Check if new position overlaps with any existing task
+            const hasOverlap = scheduledTasks.some((task) => {
+              if (!task.scheduledStart) return false
+              return tasksOverlap(
+                scheduledStart,
+                draggedDuration,
+                task.scheduledStart,
+                task.estimateMinutes || 30
+              )
+            })
+            
+            if (hasOverlap) {
+              console.log('Cannot schedule: task overlaps with existing task')
+              setLastMouseY(null)
+              setDropIndicator(null)
+              return
+            }
+          }
           
           updateTask(draggedTaskId, { scheduledStart })
         } else {
@@ -234,6 +297,7 @@ function AppContent() {
           onScheduleTask={(taskId, scheduledStart) => {
             updateTask(taskId, { scheduledStart })
           }}
+          onDeleteTask={deleteTask}
           dropIndicator={dropIndicator}
         />
         </div>
@@ -245,8 +309,10 @@ function AppContent() {
             <div className="font-medium">{activeTask.title}</div>
             <div className="text-xs text-gray-500">{activeTask.estimateMinutes}m</div>
             {dropIndicator && (
-              <div className="text-xs text-red-600 font-semibold mt-1">
-                → {dropIndicator.time}
+              <div className={`text-xs font-semibold mt-1 ${
+                dropIndicator.hasOverlap ? 'text-orange-600' : 'text-red-600'
+              }`}>
+                → {dropIndicator.hasOverlap ? '⚠ Overlap!' : dropIndicator.time}
               </div>
             )}
           </div>

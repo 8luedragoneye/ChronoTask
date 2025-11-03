@@ -7,10 +7,11 @@ import { startOfDay } from '../utils/time'
 interface PlannerPanelProps {
   tasks: Task[]
   onScheduleTask?: (taskId: string, scheduledStart: Date) => void
-  dropIndicator?: { y: number; time: string } | null
+  onDeleteTask?: (taskId: string) => void
+  dropIndicator?: { y: number; time: string; hasOverlap?: boolean } | null
 }
 
-export function PlannerPanel({ tasks, onScheduleTask, dropIndicator }: PlannerPanelProps) {
+export function PlannerPanel({ tasks, onScheduleTask, onDeleteTask, dropIndicator }: PlannerPanelProps) {
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()))
 
   const handlePreviousDay = () => {
@@ -42,6 +43,7 @@ export function PlannerPanel({ tasks, onScheduleTask, dropIndicator }: PlannerPa
         tasks={tasks}
         selectedDate={selectedDate}
         onScheduleTask={onScheduleTask}
+        onDeleteTask={onDeleteTask}
         dropIndicator={dropIndicator}
       />
     </div>

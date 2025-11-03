@@ -10,7 +10,8 @@ interface TimelineProps {
   workStartHour?: number
   workEndHour?: number
   onScheduleTask?: (taskId: string, scheduledStart: Date) => void
-  dropIndicator?: { y: number; time: string } | null
+  onDeleteTask?: (taskId: string) => void
+  dropIndicator?: { y: number; time: string; hasOverlap?: boolean } | null
 }
 
 export function Timeline({
@@ -19,6 +20,7 @@ export function Timeline({
   workStartHour = 8,
   workEndHour = 18,
   onScheduleTask,
+  onDeleteTask,
   dropIndicator,
 }: TimelineProps) {
   const totalWorkHours = workEndHour - workStartHour
@@ -132,24 +134,29 @@ export function Timeline({
         {/* Drop indicator line */}
         {dropIndicator && (
           <div
-            className="absolute left-0 right-0 border-t-2 border-red-500 z-10 pointer-events-none"
+            className={`absolute left-0 right-0 border-t-2 z-10 pointer-events-none ${
+              dropIndicator.hasOverlap ? 'border-orange-500' : 'border-red-500'
+            }`}
             style={{ top: `${dropIndicator.y}px` }}
           >
-            <div className="absolute left-0 top-0 px-2 py-0.5 bg-red-500 text-white text-xs font-semibold rounded-r">
-              {dropIndicator.time}
+            <div className={`absolute left-0 top-0 px-2 py-0.5 text-white text-xs font-semibold rounded-r ${
+              dropIndicator.hasOverlap ? 'bg-orange-500' : 'bg-red-500'
+            }`}>
+              {dropIndicator.hasOverlap ? '⚠ Overlap' : dropIndicator.time}
             </div>
           </div>
         )}
 
-        {/* Task blocks */}
-        {scheduledTasks.map((task) => (
-          <TimeBlock
-            key={task.id}
-            task={task}
-            workStartHour={workStartHour}
-            pixelsPerMinute={pixelsPerMinute}
-          />
-        ))}
+               {/* Task blocks */}
+               {scheduledTasks.map((task) => (
+                 <TimeBlock
+                   key={task.id}
+                   task={task}
+                   workStartHour={workStartHour}
+                   pixelsPerMinute={pixelsPerMinute}
+                   onDelete={onDeleteTask}
+                 />
+               ))}
       </div>
     </div>
   )

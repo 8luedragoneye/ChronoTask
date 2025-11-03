@@ -129,3 +129,24 @@ export function timeFromPosition(
   return snapTo15Minutes(result)
 }
 
+/**
+ * Check if two tasks overlap in time
+ * @param task1Start Start time of first task
+ * @param task1Duration Duration of first task in minutes
+ * @param task2Start Start time of second task
+ * @param task2Duration Duration of second task in minutes
+ * @returns true if tasks overlap
+ */
+export function tasksOverlap(
+  task1Start: Date,
+  task1Duration: number,
+  task2Start: Date,
+  task2Duration: number
+): boolean {
+  const task1End = new Date(task1Start.getTime() + task1Duration * 60 * 1000)
+  const task2End = new Date(task2Start.getTime() + task2Duration * 60 * 1000)
+  
+  // Tasks overlap if: task1Start < task2End AND task2Start < task1End
+  return task1Start < task2End && task2Start < task1End
+}
+
