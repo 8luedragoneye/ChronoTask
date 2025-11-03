@@ -11,6 +11,8 @@ export interface Task extends BaseEntity {
   priority?: TaskPriority
   projectId?: ID
   tags?: string[]
+  estimateMinutes: number
+  scheduledStart?: Date
 }
 
 export type TaskPriority = 'low' | 'medium' | 'high'
@@ -22,6 +24,8 @@ export interface CreateTaskDto {
   priority?: TaskPriority
   projectId?: ID
   tags?: string[]
+  estimateMinutes?: number
+  scheduledStart?: Date
 }
 
 export interface UpdateTaskDto {
@@ -32,5 +36,7 @@ export interface UpdateTaskDto {
   priority?: TaskPriority
   projectId?: ID
   tags?: string[]
+  estimateMinutes?: number
+  scheduledStart?: Date
 }
 

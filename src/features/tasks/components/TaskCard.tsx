@@ -1,6 +1,7 @@
+import { useDraggable } from '@dnd-kit/core'
 import { Checkbox, Button, Card } from '../../../shared/components/ui'
 import type { Task } from '../../../core/entities/Task'
-import { Trash2 } from 'lucide-react'
+import { Trash2, GripVertical } from 'lucide-react'
 
 interface TaskCardProps {
   task: Task
@@ -9,6 +10,20 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `task-${task.id}`,
+    data: {
+      type: 'task',
+      task,
+    },
+  })
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        opacity: isDragging ? 0.5 : 1,
+      }
+    : undefined
   const handleToggle = () => {
     onToggle(task.id)
   }
@@ -20,8 +35,19 @@ export function TaskCard({ task, onToggle, onDelete }: TaskCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`hover:shadow-md transition-shadow ${isDragging ? 'opacity-50' : ''}`}
+    >
       <div className="flex items-start gap-3">
+        <div
+          {...listeners}
+          {...attributes}
+          className="pt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        >
+          <GripVertical className="w-4 h-4" />
+        </div>
         <div className="pt-1">
           <Checkbox
             checked={task.completed}

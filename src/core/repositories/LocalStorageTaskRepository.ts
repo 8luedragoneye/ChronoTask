@@ -13,14 +13,26 @@ export class LocalStorageTaskRepository implements ITaskRepository {
       const data = localStorage.getItem(STORAGE_KEY)
       if (!data) return []
       
-      const tasks = JSON.parse(data) as Task[]
-      // Convert date strings back to Date objects
-      return tasks.map(task => ({
-        ...task,
-        createdAt: new Date(task.createdAt),
-        updatedAt: new Date(task.updatedAt),
-        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-      }))
+      const raw = JSON.parse(data) as any[]
+      // Convert date strings back to Date objects and fill defaults
+      return raw.map((task: any) => {
+        const createdAt = task.createdAt ? new Date(task.createdAt) : new Date()
+        const updatedAt = task.updatedAt ? new Date(task.updatedAt) : createdAt
+        const dueDate = task.dueDate ? new Date(task.dueDate) : undefined
+        const scheduledStart = task.scheduledStart ? new Date(task.scheduledStart) : undefined
+        const estimateMinutes = typeof task.estimateMinutes === 'number' && !isNaN(task.estimateMinutes)
+          ? task.estimateMinutes
+          : 30
+
+        return {
+          ...task,
+          createdAt,
+          updatedAt,
+          dueDate,
+          scheduledStart,
+          estimateMinutes,
+        } as Task
+      })
     } catch (error) {
       console.error('Error reading tasks from storage:', error)
       return []
@@ -60,6 +72,8 @@ export class LocalStorageTaskRepository implements ITaskRepository {
       tags: dto.tags || [],
       createdAt: now,
       updatedAt: now,
+      estimateMinutes: dto.estimateMinutes && dto.estimateMinutes > 0 ? dto.estimateMinutes : 30,
+      scheduledStart: dto.scheduledStart,
     }
 
     tasks.push(newTask)
@@ -78,6 +92,12 @@ export class LocalStorageTaskRepository implements ITaskRepository {
     const updatedTask: Task = {
       ...tasks[index],
       ...updates,
+      estimateMinutes: updates.estimateMinutes !== undefined
+        ? (updates.estimateMinutes > 0 ? updates.estimateMinutes : tasks[index].estimateMinutes)
+        : tasks[index].estimateMinutes,
+      scheduledStart: updates.scheduledStart !== undefined
+        ? updates.scheduledStart
+        : tasks[index].scheduledStart,
       updatedAt: new Date(),
     }
 
