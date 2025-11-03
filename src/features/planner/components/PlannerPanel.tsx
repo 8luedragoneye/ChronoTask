@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { DayHeader } from './DayHeader'
 import { Timeline } from './Timeline'
+import { TimeEvaluation } from './TimeEvaluation'
 import type { Task } from '../../../core/entities/Task'
 import { startOfDay } from '../utils/time'
 
@@ -12,40 +11,25 @@ interface PlannerPanelProps {
 }
 
 export function PlannerPanel({ tasks, onScheduleTask, onDeleteTask, dropIndicator }: PlannerPanelProps) {
-  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()))
-
-  const handlePreviousDay = () => {
-    const newDate = new Date(selectedDate)
-    newDate.setDate(newDate.getDate() - 1)
-    setSelectedDate(startOfDay(newDate))
-  }
-
-  const handleNextDay = () => {
-    const newDate = new Date(selectedDate)
-    newDate.setDate(newDate.getDate() + 1)
-    setSelectedDate(startOfDay(newDate))
-  }
-
-  const handleToday = () => {
-    setSelectedDate(startOfDay(new Date()))
-  }
+  // Always use today's date
+  const selectedDate = startOfDay(new Date())
+  const workStartHour = 8
+  const workEndHour = 18
 
   return (
     <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
-      <DayHeader
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-        onPreviousDay={handlePreviousDay}
-        onNextDay={handleNextDay}
-        onToday={handleToday}
-      />
-      <Timeline
-        tasks={tasks}
-        selectedDate={selectedDate}
-        onScheduleTask={onScheduleTask}
-        onDeleteTask={onDeleteTask}
-        dropIndicator={dropIndicator}
-      />
+      <div className="flex-1 overflow-hidden">
+        <Timeline
+          tasks={tasks}
+          selectedDate={selectedDate}
+          workStartHour={workStartHour}
+          workEndHour={workEndHour}
+          onScheduleTask={onScheduleTask}
+          onDeleteTask={onDeleteTask}
+          dropIndicator={dropIndicator}
+        />
+      </div>
+      <TimeEvaluation tasks={tasks} workStartHour={workStartHour} workEndHour={workEndHour} />
     </div>
   )
 }
