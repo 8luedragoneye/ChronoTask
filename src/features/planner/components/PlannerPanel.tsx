@@ -13,8 +13,8 @@ interface PlannerPanelProps {
 export function PlannerPanel({ tasks, onScheduleTask, onDeleteTask, dropIndicator }: PlannerPanelProps) {
   // Always use today's date
   const selectedDate = startOfDay(new Date())
-  const workStartHour = 8
-  const workEndHour = 18
+  const workStartHour = 8.5 // 8:30
+  const workEndHour = 16.5 // 16:30
 
   return (
     <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">

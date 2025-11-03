@@ -27,8 +27,11 @@ export function Timeline({
   const totalWorkMinutes = totalWorkHours * 60
 
   // Generate time slots for the grid
+  // Include all hours from start to end (e.g., 8:30-16:30 means show hours 8, 9, 10, 11, 12, 13, 14, 15, 16)
   const timeSlots: number[] = []
-  for (let hour = workStartHour; hour < workEndHour; hour++) {
+  const startHour = Math.floor(workStartHour)
+  const endHour = Math.ceil(workEndHour)
+  for (let hour = startHour; hour <= endHour; hour++) {
     timeSlots.push(hour)
   }
 
@@ -82,15 +85,55 @@ export function Timeline({
       >
         {/* Time grid lines */}
         {timeSlots.map((hour) => {
-          const topPx = (hour - workStartHour) * 60 * pixelsPerMinute + 16 // Add padding at top
+          // Show hour if it's within or at the boundaries of the work range
+          // Include start hour (e.g., 8 when workStartHour is 8.5) and end hour (e.g., 16 when workEndHour is 16.5)
+          const startHourInt = Math.floor(workStartHour)
+          const endHourInt = Math.floor(workEndHour)
+          
+          // Only show if hour is between start and end (inclusive)
+          if (hour < startHourInt || hour > endHourInt) return null
+          
+          // Determine minutes for label: if it's the start hour with fractional part, show those minutes
+          let displayMinutes = 0
+          let displayHour = hour
+          
+          const isStartHour = hour === startHourInt
+          const isEndHour = hour === endHourInt
+          const hasStartMinutes = workStartHour % 1 !== 0
+          const hasEndMinutes = workEndHour % 1 !== 0
+          
+          if (isStartHour && hasStartMinutes) {
+            displayMinutes = Math.floor((workStartHour % 1) * 60)
+          } else if (isEndHour && hasEndMinutes) {
+            // Show end hour with its minutes if it has fractional part
+            displayMinutes = Math.floor((workEndHour % 1) * 60)
+          }
+          
+          // Calculate position relative to workStartHour
+          // For the start hour with fractional time, position at the start (0 offset)
+          let topPx: number
+          if (isStartHour) {
+            // Position at the very top (after padding) - this is the start time (8:30)
+            topPx = 16
+          } else {
+            // Regular calculation: hours from start
+            topPx = (hour - workStartHour) * 60 * pixelsPerMinute + 16
+          }
+          
           return (
             <div
               key={hour}
               className="absolute left-0 right-0 border-t border-gray-200"
               style={{ top: `${topPx}px` }}
             >
-              <div className="absolute left-0 top-0 px-2 text-xs text-gray-500 bg-white" style={{ transform: 'translateY(-50%)' }}>
-                {formatTime(new Date(2000, 0, 1, hour, 0))}
+              <div 
+                className="absolute left-0 px-2 text-xs text-gray-500 bg-white whitespace-nowrap" 
+                style={{ 
+                  top: isStartHour && hasStartMinutes ? '0px' : '-50%',
+                  transform: isStartHour && hasStartMinutes ? 'none' : 'translateY(-50%)'
+                }}
+              >
+                {formatTime(new Date(2000, 0, 1, displayHour, displayMinutes))}
               </div>
             </div>
           )
@@ -98,8 +141,9 @@ export function Timeline({
 
         {/* Half-hour grid lines (lighter) */}
         {timeSlots.map((hour) => {
-          if (hour === workEndHour - 1) return null
+          if (hour >= Math.floor(workEndHour)) return null
           const topPx = (hour + 0.5 - workStartHour) * 60 * pixelsPerMinute + 16 // Add padding at top
+          if (topPx < 16 || topPx > totalHeight + 16) return null // Skip if outside visible area
           return (
             <div
               key={`${hour}-half`}
@@ -116,12 +160,12 @@ export function Timeline({
           hour + 0.5,
           hour + 0.75,
         ]).filter((time) => {
-          const totalTime = workStartHour + (time - workStartHour)
-          return totalTime < workEndHour
+          return time >= workStartHour && time < workEndHour
         }).map((time) => {
           const topPx = (time - workStartHour) * 60 * pixelsPerMinute + 16 // Add padding at top
           const hour = Math.floor(time)
-          const minute = (time % 1) * 60
+          const minute = Math.round((time % 1) * 60)
+          if (topPx < 16 || topPx > totalHeight + 16) return null // Skip if outside visible area
           return (
             <div
               key={`${hour}-${minute}`}

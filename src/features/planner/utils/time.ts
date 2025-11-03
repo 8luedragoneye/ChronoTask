@@ -107,7 +107,7 @@ export function getDurationHeight(durationMinutes: number, totalWorkMinutes: num
  * @param y Y position in pixels
  * @param day The day to schedule on
  * @param pixelsPerMinute How many pixels per minute
- * @param workStartHour Starting hour (e.g., 8 for 8:00 AM)
+ * @param workStartHour Starting hour (e.g., 8.5 for 8:30 AM)
  * @returns Date snapped to 15-minute intervals
  */
 export function timeFromPosition(
@@ -121,9 +121,13 @@ export function timeFromPosition(
   const hours = Math.floor(minutesFromStart / 60)
   const minutes = minutesFromStart % 60
   
+  // Handle fractional start hour (e.g., 8.5 = 8:30)
+  const startHourInt = Math.floor(workStartHour)
+  const startMinutesInt = Math.floor((workStartHour % 1) * 60)
+  
   // Create date with the calculated time
   const result = new Date(day)
-  result.setHours(workStartHour + hours, minutes, 0, 0)
+  result.setHours(startHourInt + hours, startMinutesInt + minutes, 0, 0)
   
   // Snap to 15-minute intervals
   return snapTo15Minutes(result)
