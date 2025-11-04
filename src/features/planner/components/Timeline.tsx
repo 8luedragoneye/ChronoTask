@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { TimeBlock } from './TimeBlock'
+import { BreakBlock } from './BreakBlock'
 import { formatTime } from '../utils/time'
 import type { Task } from '../../../core/entities/Task'
 
@@ -12,6 +13,7 @@ interface TimelineProps {
   onScheduleTask?: (taskId: string, scheduledStart: Date) => void
   onDeleteTask?: (taskId: string) => void
   dropIndicator?: { y: number; time: string; hasOverlap?: boolean } | null
+  workdayActive?: boolean
 }
 
 export function Timeline({
@@ -22,6 +24,7 @@ export function Timeline({
   onScheduleTask,
   onDeleteTask,
   dropIndicator,
+  workdayActive = false,
 }: TimelineProps) {
   const totalWorkHours = workEndHour - workStartHour
   const totalWorkMinutes = totalWorkHours * 60
@@ -190,6 +193,30 @@ export function Timeline({
             </div>
           </div>
         )}
+
+               {/* Break blocks (when workday is active) */}
+               {workdayActive && (() => {
+                 const breaks = [
+                   { hour: 10, minute: 0, duration: 30 }, // 10:00-10:30
+                   { hour: 11, minute: 30, duration: 60 }, // 11:30-12:30
+                   { hour: 14, minute: 30, duration: 30 }, // 14:30-15:00
+                 ]
+                 
+                 return breaks.map((breakTime, index) => {
+                   const breakStart = new Date(selectedDate)
+                   breakStart.setHours(breakTime.hour, breakTime.minute, 0, 0)
+                   
+                   return (
+                     <BreakBlock
+                       key={`break-${index}`}
+                       startTime={breakStart}
+                       durationMinutes={breakTime.duration}
+                       workStartHour={workStartHour}
+                       pixelsPerMinute={pixelsPerMinute}
+                     />
+                   )
+                 })
+               })()}
 
                {/* Task blocks */}
                {scheduledTasks.map((task) => (

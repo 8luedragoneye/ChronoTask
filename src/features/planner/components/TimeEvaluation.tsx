@@ -6,9 +6,10 @@ interface TimeEvaluationProps {
   tasks: Task[]
   workStartHour?: number
   workEndHour?: number
+  workdayActive?: boolean
 }
 
-export function TimeEvaluation({ tasks, workStartHour = 8, workEndHour = 18 }: TimeEvaluationProps) {
+export function TimeEvaluation({ tasks, workStartHour = 8, workEndHour = 18, workdayActive = false }: TimeEvaluationProps) {
   const { taskTypes } = useTaskTypes()
 
   const stats = useMemo(() => {
@@ -35,8 +36,12 @@ export function TimeEvaluation({ tasks, workStartHour = 8, workEndHour = 18 }: T
       }
     })
 
-    // Calculate free time (work day time minus planned tasks)
-    const freeTimeMinutes = Math.max(0, totalWorkDayMinutes - totalPlannedMinutes)
+    // Calculate break time if workday is active
+    // Breaks: 10:00-10:30 (30 min), 11:30-12:30 (60 min), 14:30-15:00 (30 min)
+    const breakMinutes = workdayActive ? 30 + 60 + 30 : 0 // Total: 120 minutes
+
+    // Calculate free time (work day time minus planned tasks minus breaks)
+    const freeTimeMinutes = Math.max(0, totalWorkDayMinutes - totalPlannedMinutes - breakMinutes)
 
     // Total time to show in chart = work day time
     const totalTime = totalWorkDayMinutes
@@ -55,6 +60,17 @@ export function TimeEvaluation({ tasks, workStartHour = 8, workEndHour = 18 }: T
         percentage,
       })
     })
+
+    // Add breaks if workday is active
+    if (workdayActive && breakMinutes > 0) {
+      const percentage = totalTime > 0 ? (breakMinutes / totalTime) * 100 : 0
+      typeStats.push({
+        name: 'break',
+        color: '#FEF3C7', // Light yellow/amber for breaks (matching BreakBlock)
+        minutes: breakMinutes,
+        percentage,
+      })
+    }
 
     // Add free time (unplanned time in the work day)
     if (freeTimeMinutes > 0) {
@@ -88,7 +104,7 @@ export function TimeEvaluation({ tasks, workStartHour = 8, workEndHour = 18 }: T
       totalUnscheduledTaskMinutes,
       totalTime,
     }
-  }, [tasks, taskTypes, workStartHour, workEndHour])
+  }, [tasks, taskTypes, workStartHour, workEndHour, workdayActive])
 
   // Calculate angles for pie chart
   let currentAngle = -90 // Start at top (12 o'clock)
@@ -189,7 +205,7 @@ export function TimeEvaluation({ tasks, workStartHour = 8, workEndHour = 18 }: T
                   style={{ backgroundColor: stat.color }}
                 />
                 <span className="font-medium text-gray-900 capitalize border-b border-dotted border-gray-400 flex-1">
-                  {stat.name === 'free' ? 'Free Time' : stat.name === 'unscheduled' ? 'Unscheduled Tasks' : stat.name}
+                  {stat.name === 'free' ? 'Free Time' : stat.name === 'break' ? 'Breaks' : stat.name === 'unscheduled' ? 'Unscheduled Tasks' : stat.name}
                 </span>
               </div>
             ))}

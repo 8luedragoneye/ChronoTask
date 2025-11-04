@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Timeline } from './Timeline'
 import { TimeEvaluation } from './TimeEvaluation'
 import type { Task } from '../../../core/entities/Task'
 import { startOfDay } from '../utils/time'
+import { Checkbox } from '../../../shared/components/ui'
 
 interface PlannerPanelProps {
   tasks: Task[]
@@ -11,6 +13,7 @@ interface PlannerPanelProps {
 }
 
 export function PlannerPanel({ tasks, onScheduleTask, onDeleteTask, dropIndicator }: PlannerPanelProps) {
+  const [workdayActive, setWorkdayActive] = useState(true) // Default activated
   // Always use today's date
   const selectedDate = startOfDay(new Date())
   const workStartHour = 8.5 // 8:30
@@ -18,6 +21,13 @@ export function PlannerPanel({ tasks, onScheduleTask, onDeleteTask, dropIndicato
 
   return (
     <div className="h-full flex flex-col bg-gray-50 border-l border-gray-200">
+      <div className="px-4 pt-4 pb-2 bg-white border-b border-gray-200">
+        <Checkbox
+          checked={workdayActive}
+          onChange={(e) => setWorkdayActive(e.target.checked)}
+          label="Workday"
+        />
+      </div>
       <div className="flex-1 overflow-hidden">
         <Timeline
           tasks={tasks}
@@ -27,9 +37,10 @@ export function PlannerPanel({ tasks, onScheduleTask, onDeleteTask, dropIndicato
           onScheduleTask={onScheduleTask}
           onDeleteTask={onDeleteTask}
           dropIndicator={dropIndicator}
+          workdayActive={workdayActive}
         />
       </div>
-      <TimeEvaluation tasks={tasks} workStartHour={workStartHour} workEndHour={workEndHour} />
+      <TimeEvaluation tasks={tasks} workStartHour={workStartHour} workEndHour={workEndHour} workdayActive={workdayActive} />
     </div>
   )
 }

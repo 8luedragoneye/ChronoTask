@@ -2,10 +2,13 @@ import { useState, useCallback, useRef } from 'react'
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core'
 import { TaskRepositoryProvider } from './core/repositories/TaskRepositoryContext'
 import { TaskTypeRepositoryProvider } from './core/repositories/TaskTypeRepositoryContext'
+import { IdeaRepositoryProvider } from './core/repositories/IdeaRepositoryContext'
 import { TaskList, CreateTaskForm } from './features/tasks'
 import { useTasks } from './features/tasks'
 import { PlannerPanel } from './features/planner'
+import { IdeaVault } from './features/ideas/components/IdeaVault'
 import { timeFromPosition, tasksOverlap } from './features/planner/utils/time'
+import { Toggle } from './shared/components/ui'
 import { ErrorBoundary } from 'react-error-boundary'
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
@@ -33,6 +36,7 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
 
 function AppContent() {
   const { createTask, isLoading, tasks, updateTask, deleteTask } = useTasks()
+  const [viewMode, setViewMode] = useState<'timeplan' | 'ideavault'>('timeplan')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [lastMouseY, setLastMouseY] = useState<number | null>(null)
   const [dropIndicator, setDropIndicator] = useState<{ y: number; time: string; hasOverlap?: boolean } | null>(null)
@@ -277,37 +281,58 @@ function AppContent() {
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
-      <div className="min-h-screen bg-gray-50 flex">
-        {/* Left side - Tasks */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <header className="mb-8">
-              <h1 className="text-4xl font-bold text-center mb-2 text-gray-900">
-                ChronoTask
-              </h1>
-              <p className="text-center text-gray-600">
-                Modern Task Management
-              </p>
-            </header>
-
-            <div className="space-y-6">
-              <CreateTaskForm onSubmit={createTask} isLoading={isLoading} />
-              <TaskList />
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Header spanning full width */}
+        <header className="w-full py-8 bg-white border-b border-gray-200">
+          <div className="px-4">
+            <h1 className="text-4xl font-bold text-center mb-2 text-gray-900">
+              ChronoTask
+            </h1>
+            <p className="text-center text-gray-600 mb-4">
+              Modern Task Management
+            </p>
+            <div className="flex justify-center">
+              <Toggle
+                checked={viewMode === 'ideavault'}
+                onChange={(e) => setViewMode(e.target.checked ? 'ideavault' : 'timeplan')}
+                leftLabel="Time Plan"
+                rightLabel="Idea Vault"
+              />
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Right side - Day Planner */}
-        <div className="w-1/2 min-w-[500px] hidden lg:flex flex-col h-screen sticky top-0">
-        <PlannerPanel
-          tasks={tasks}
-          onScheduleTask={(taskId, scheduledStart) => {
-            updateTask(taskId, { scheduledStart })
-          }}
-          onDeleteTask={deleteTask}
-          dropIndicator={dropIndicator}
-        />
-        </div>
+        {/* Main content area */}
+        {viewMode === 'timeplan' ? (
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left side - Tasks */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="space-y-6">
+                  <CreateTaskForm onSubmit={createTask} isLoading={isLoading} />
+                  <TaskList />
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Day Planner */}
+            <div className="w-1/2 min-w-[500px] hidden lg:flex flex-col pt-8">
+              <PlannerPanel
+                tasks={tasks}
+                onScheduleTask={(taskId, scheduledStart) => {
+                  updateTask(taskId, { scheduledStart })
+                }}
+                onDeleteTask={deleteTask}
+                dropIndicator={dropIndicator}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 overflow-hidden">
+            {/* Idea Vault - Full width */}
+            <IdeaVault />
+          </div>
+        )}
       </div>
       
       <DragOverlay>
@@ -339,7 +364,9 @@ function App() {
     >
       <TaskRepositoryProvider>
         <TaskTypeRepositoryProvider>
-          <AppContent />
+          <IdeaRepositoryProvider>
+            <AppContent />
+          </IdeaRepositoryProvider>
         </TaskTypeRepositoryProvider>
       </TaskRepositoryProvider>
     </ErrorBoundary>
