@@ -435,6 +435,7 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
                 isExpanded={expandedNodes.has(idea.id)}
                 onToggleExpand={toggleExpand}
                 onDelete={deleteIdea}
+                zoom={zoom}
               />
             )
           })}

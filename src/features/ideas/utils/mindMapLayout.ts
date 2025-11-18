@@ -13,10 +13,10 @@ export interface LayoutNode {
   position: NodePosition
 }
 
-const NODE_WIDTH = 250
-const NODE_HEIGHT = 120
-const HORIZONTAL_SPACING = 320 // Increased to prevent overlap
-const VERTICAL_SPACING = 180 // Increased for better readability
+const NODE_WIDTH = 350 // Increased to accommodate larger cards at low zoom
+const NODE_HEIGHT = 140 // Slightly increased for better text fit
+const HORIZONTAL_SPACING = 200 // Reduced spacing between nodes
+const VERTICAL_SPACING = 120 // Reduced vertical spacing
 
 /**
  * Builds a tree structure from a flat list of ideas
