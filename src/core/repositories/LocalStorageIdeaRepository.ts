@@ -47,6 +47,9 @@ export class LocalStorageIdeaRepository implements IIdeaRepository {
       name: dto.name.trim(),
       description: dto.description?.trim() || undefined,
       topic: dto.topic?.trim() || undefined,
+      parentId: dto.parentId,
+      positionX: dto.positionX,
+      positionY: dto.positionY,
       createdAt: now,
       updatedAt: now,
     }
@@ -69,6 +72,9 @@ export class LocalStorageIdeaRepository implements IIdeaRepository {
       ...(updates.name !== undefined && { name: updates.name.trim() }),
       ...(updates.description !== undefined && { description: updates.description?.trim() || undefined }),
       ...(updates.topic !== undefined && { topic: updates.topic?.trim() || undefined }),
+      ...(updates.parentId !== undefined && { parentId: updates.parentId }),
+      ...(updates.positionX !== undefined && { positionX: updates.positionX }),
+      ...(updates.positionY !== undefined && { positionY: updates.positionY }),
       updatedAt: new Date(),
     }
 
