@@ -2,13 +2,18 @@ import { useState, useMemo } from 'react'
 import { CreateIdeaForm } from './CreateIdeaForm'
 import { IdeaMindMap } from './IdeaMindMap'
 import { useIdeas } from '../hooks/useIdeas'
-import { Button, Card } from '../../../shared/components/ui'
-import { Plus, X } from 'lucide-react'
+import { Button, Card, Textarea } from '../../../shared/components/ui'
+import { Plus, X, Download, Upload } from 'lucide-react'
+import { downloadIdeas, parseAndImportIdeas, readFileAsText } from '../utils/ideaExport'
 
 export function IdeaVault() {
-  const { ideas, createIdea, isLoading } = useIdeas()
+  const { ideas, createIdea, isLoading, loadIdeas } = useIdeas()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [selectedTopic, setSelectedTopic] = useState<string | null>('all')
+  const [importError, setImportError] = useState<string | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [showImportSection, setShowImportSection] = useState(false)
 
   // Extract unique topics from ideas
   const topics = useMemo(() => {
@@ -29,13 +34,75 @@ export function IdeaVault() {
     return ideas.filter(idea => idea.topic === selectedTopic)
   }, [ideas, selectedTopic])
 
+  // Export handler
+  const handleExport = () => {
+    downloadIdeas(ideas)
+  }
+
+  // Import from text handler
+  const handleImportFromText = async () => {
+    if (!importText.trim()) {
+      setImportError('Please paste JSON content')
+      return
+    }
+
+    setImportError(null)
+    setIsImporting(true)
+    
+    try {
+      await parseAndImportIdeas(
+        importText,
+        createIdea,
+        async () => {
+          await loadIdeas()
+          return ideas
+        }
+      )
+      await loadIdeas()
+      setImportText('')
+      setShowImportSection(false)
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Failed to import ideas')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  // Import from file handler
+  const handleImportFromFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImportError(null)
+    setIsImporting(true)
+    
+    try {
+      const fileContent = await readFileAsText(file)
+      await parseAndImportIdeas(
+        fileContent,
+        createIdea,
+        async () => {
+          await loadIdeas()
+          return ideas
+        }
+      )
+      await loadIdeas()
+      event.target.value = ''
+      setShowImportSection(false)
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Failed to import ideas')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
 
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Sidebar - 1/5 width */}
       <div className="w-1/5 min-w-[200px] bg-white border-r border-gray-200 flex flex-col">
         {/* Create button */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 space-y-2">
           <Button
             onClick={() => setShowCreateForm(true)}
             className="w-full"
@@ -44,6 +111,74 @@ export function IdeaVault() {
             <Plus className="w-4 h-4 mr-2" />
             Create Idea
           </Button>
+          
+          <Button
+            onClick={handleExport}
+            className="w-full"
+            variant="secondary"
+            disabled={isLoading || ideas.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export Ideas
+          </Button>
+          
+          <Button
+            onClick={() => setShowImportSection(!showImportSection)}
+            className="w-full"
+            variant="secondary"
+            disabled={isLoading}
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Import Ideas
+          </Button>
+          
+          {showImportSection && (
+            <div className="mt-2 space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <Textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder='Paste JSON here, e.g.:\n{\n  "ideas": [\n    {\n      "name": "My Idea",\n      "topic": "Work"\n    }\n  ]\n}'
+                rows={6}
+                className="text-xs font-mono"
+                disabled={isImporting}
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleImportFromText}
+                  className="flex-1"
+                  size="sm"
+                  disabled={isImporting || !importText.trim()}
+                >
+                  {isImporting ? 'Importing...' : 'Import from Text'}
+                </Button>
+                <label className="flex-1">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportFromFile}
+                    className="hidden"
+                    disabled={isImporting}
+                    id="import-ideas-file"
+                  />
+                  <Button
+                    type="button"
+                    className="w-full"
+                    size="sm"
+                    variant="secondary"
+                    disabled={isImporting}
+                    onClick={() => {
+                      document.getElementById('import-ideas-file')?.click()
+                    }}
+                  >
+                    From File
+                  </Button>
+                </label>
+              </div>
+              {importError && (
+                <p className="text-xs text-red-600 mt-1">{importError}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Topic list */}
