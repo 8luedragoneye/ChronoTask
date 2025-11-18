@@ -63,6 +63,7 @@ export function MindMapNode({
   return (
     <div
       ref={setDroppableRef}
+      data-idea-node={idea.id}
       style={{
         position: 'absolute',
         left: `${position.x}px`,

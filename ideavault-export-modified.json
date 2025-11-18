@@ -1,0 +1,89 @@
+{
+  "ideas": [
+    {
+      "name": "The Triad of the Forged Man",
+      "description": "The three unbreakable states of soul that appear in every tradition when describing men who are not merely unbroken by radical suffering but enlarged by it—deeper in charity, wiser in judgment, greater in capacity.",
+      "topic": "grow in trial",
+      "parentName": ""
+    },
+    {
+      "name": "1. Theological Hope (Spes)",
+      "description": "The absolute, grace-sustained conviction that evil does not and cannot have the final word; the 'sure and steadfast anchor of the soul' (Heb 6:19) rooted in the victory of Christ (or its unbreakable secular shadow: tragic optimism). Without this, every other 'why' eventually becomes negotiable.",
+      "topic": "grow in trial",
+      "parentName": "The Triad of the Forged Man"
+    },
+    {
+      "name": "Object Beyond History",
+      "description": "Hope is fixed not on outcomes in time (rescue, justice now, survival) but on eternal communion with God / ultimate triumph of good.",
+      "topic": "grow in trial",
+      "parentName": "1. Theological Hope (Spes)"
+    },
+    {
+      "name": "Sustains When All Earthly Whys Fail",
+      "description": "Family murdered, mission destroyed, body broken—still the final chapter is victory (martyrs singing, Kolbe in the bunker, Ciszek in Gulag).",
+      "topic": "grow in trial",
+      "parentName": "1. Theological Hope (Spes)"
+    },
+    {
+      "name": "Prevents Eschatological Despair",
+      "description": "The only known antidote to 'in the end nothing matters, entropy/evil wins'.",
+      "topic": "grow in trial",
+      "parentName": "1. Theological Hope (Spes)"
+    },
+    {
+      "name": "2. Absolute Ownership of the Inner Citadel",
+      "description": "The inviolable territory of judgment, will, and meaning-making that no external power can enter without consent. 'They can take everything else but not my decision about what it means.'",
+      "topic": "grow in trial",
+      "parentName": "The Triad of the Forged Man"
+    },
+    {
+      "name": "Dichotomy of Control (Epictetus)",
+      "description": "Radically distinguish what depends on you (judgments, choices) from what does not (body, reputation, outcomes).",
+      "topic": "grow in trial",
+      "parentName": "2. Absolute Ownership of the Inner Citadel"
+    },
+    {
+      "name": "Locus of Control Internal & Eternal",
+      "description": "Stockdale Paradox, Solzhenitsyn's line between good and evil running through the heart, Mandela's 'I am the captain of my soul'.",
+      "topic": "grow in trial",
+      "parentName": "2. Absolute Ownership of the Inner Citadel"
+    },
+    {
+      "name": "Freedom No Tyrant Can Touch",
+      "description": "The last and ultimate human freedom—Frankl's final freedom, the martyr's smile on the scaffold.",
+      "topic": "grow in trial",
+      "parentName": "2. Absolute Ownership of the Inner Citadel"
+    },
+    {
+      "name": "3. Equanimity Under Fire",
+      "description": "The trained capacity to feel terror, rage, grief, and pain fully without being ruled or hijacked by them; clear-seeing calm in the eye of the storm.",
+      "topic": "grow in trial",
+      "parentName": "The Triad of the Forged Man"
+    },
+    {
+      "name": "Not Suppression but Non-Attachment",
+      "description": "Feel everything, yet the center does not move (Thich Quang Duc burning, Marcus Aurelius amid plague, SEAL under ice water).",
+      "topic": "grow in trial",
+      "parentName": "3. Equanimity Under Fire"
+    },
+    {
+      "name": "The Space Between Stimulus and Response",
+      "description": "Frankl's space where freedom and power live; Stoic prosoche; Buddhist mindfulness; modern arousal-control breathing.",
+      "topic": "grow in trial",
+      "parentName": "3. Equanimity Under Fire"
+    },
+    {
+      "name": "Preserves Wise Action",
+      "description": "Prevents reactive stupidity (rage → suicide mission, despair → betrayal); suffering becomes data, not dictator.",
+      "topic": "grow in trial",
+      "parentName": "3. Equanimity Under Fire"
+    },
+    {
+      "name": "How the Triad Operates Together",
+      "description": "Hope gives an unbreakable Why → Inner Citadel protects sovereign choice → Equanimity ensures choices remain wise under pressure → suffering is transmuted into greater charity, wisdom, and eventual agency.",
+      "topic": "grow in trial",
+      "parentName": "The Triad of the Forged Man"
+    }
+  ]
+}
+

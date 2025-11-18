@@ -12,7 +12,17 @@ export function IdeaVault() {
   const [selectedTopic, setSelectedTopic] = useState<string | null>('all')
   const [importError, setImportError] = useState<string | null>(null)
   const [isImporting, setIsImporting] = useState(false)
-  const [importText, setImportText] = useState('')
+  const exampleJson = `{
+  "ideas": [
+    {
+      "name": "",
+      "description": "",
+      "topic": "",
+      "parentName": ""
+    }
+  ]
+}`
+  const [importText, setImportText] = useState(exampleJson)
   const [showImportSection, setShowImportSection] = useState(false)
 
   // Extract unique topics from ideas
@@ -123,7 +133,12 @@ export function IdeaVault() {
           </Button>
           
           <Button
-            onClick={() => setShowImportSection(!showImportSection)}
+            onClick={() => {
+              if (!showImportSection) {
+                setImportText(exampleJson)
+              }
+              setShowImportSection(!showImportSection)
+            }}
             className="w-full"
             variant="secondary"
             disabled={isLoading}
@@ -137,8 +152,8 @@ export function IdeaVault() {
               <Textarea
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
-                placeholder='Paste JSON here, e.g.:\n{\n  "ideas": [\n    {\n      "name": "My Idea",\n      "topic": "Work"\n    }\n  ]\n}'
-                rows={6}
+                placeholder="Paste JSON here..."
+                rows={8}
                 className="text-xs font-mono"
                 disabled={isImporting}
               />

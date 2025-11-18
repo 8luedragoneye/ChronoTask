@@ -1,11 +1,13 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
 import { MindMapNode } from './MindMapNode'
 import { useIdeas } from '../hooks/useIdeas'
 import { buildTree, calculateLayout, wouldCreateCircularReference } from '../utils/mindMapLayout'
 import type { ID, Idea } from '../../../core/entities/Idea'
+import { Button } from '../../../shared/components/ui'
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 
-function RootDropZone() {
+function RootDropZone({ width, height }: { width: number; height: number }) {
   const { setNodeRef, isOver } = useDroppable({
     id: 'mindmap-root',
     data: {
@@ -16,8 +18,14 @@ function RootDropZone() {
   return (
     <div
       ref={setNodeRef}
-      className={`absolute inset-0 ${isOver ? 'bg-blue-50 border-2 border-blue-400 border-dashed' : ''}`}
-      style={{ zIndex: 0 }}
+      className={`absolute ${isOver ? 'bg-blue-50 border-2 border-blue-400 border-dashed' : ''}`}
+      style={{ 
+        zIndex: 0,
+        top: 0,
+        left: 0,
+        width: `${width}px`,
+        height: `${height}px`
+      }}
     />
   )
 }
@@ -41,6 +49,14 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null)
   
+  // Zoom and pan state
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  
   // Update expanded nodes when ideas change (add new ideas as expanded)
   useEffect(() => {
     setExpandedNodes(prev => {
@@ -61,6 +77,66 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
       }
     })
   )
+
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(prev + 0.25, 3))
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(prev - 0.25, 0.25))
+  }, [])
+
+  const handleResetView = useCallback(() => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }, [])
+
+  // Mouse wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -0.1 : 0.1
+      setZoom(prev => Math.max(0.25, Math.min(3, prev + delta)))
+    }
+  }, [])
+
+  // Pan handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only pan if clicking on empty space (not on a node or button)
+    const target = e.target as HTMLElement
+    // Don't pan if clicking on a node, button, or interactive element
+    if (
+      target.closest('[data-idea-node]') ||
+      target.closest('button') ||
+      target.closest('[role="button"]') ||
+      target.closest('.zoom-controls') ||
+      target.closest('svg') ||
+      target.closest('line')
+    ) {
+      return
+    }
+    
+    // Pan with middle mouse button, right mouse button, or space + left click
+    if (e.button === 1 || e.button === 2 || (e.button === 0 && e.shiftKey)) {
+      e.preventDefault()
+      setIsPanning(true)
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+    }
+  }, [pan])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      })
+    }
+  }, [isPanning, panStart])
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false)
+  }, [])
 
   // Build tree structure and calculate layout
   const positions = useMemo(() => {
@@ -100,9 +176,10 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
     setActiveId(null)
     
     // Calculate new position if dragged (not nested)
+    // Convert delta from screen space to canvas space
     const shouldUpdatePosition = dragStartPosition && delta && (delta.x !== 0 || delta.y !== 0)
-    const newX = dragStartPosition && delta ? dragStartPosition.x + delta.x : undefined
-    const newY = dragStartPosition && delta ? dragStartPosition.y + delta.y : undefined
+    const newX = dragStartPosition && delta ? dragStartPosition.x + (delta.x / zoom) : undefined
+    const newY = dragStartPosition && delta ? dragStartPosition.y + (delta.y / zoom) : undefined
     
     if (!over) {
       // Dropped on empty space - update position
@@ -187,7 +264,7 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
     return lines
   }, [ideas, positions, expandedNodes])
 
-  // Calculate canvas size
+  // Calculate canvas size with proper padding
   const canvasSize = useMemo(() => {
     let maxX = 0
     let maxY = 0
@@ -197,9 +274,10 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
       maxY = Math.max(maxY, pos.y + pos.height)
     })
     
+    // Add generous padding to ensure everything is visible
     return {
-      width: Math.max(maxX + 100, 1200),
-      height: Math.max(maxY + 100, 800)
+      width: Math.max(maxX + 200, 2000),
+      height: Math.max(maxY + 200, 1000)
     }
   }, [positions])
 
@@ -223,7 +301,51 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="relative w-full h-full overflow-auto bg-gray-50" style={{ minHeight: '600px' }}>
+      <div 
+        ref={containerRef}
+        className="w-full h-full overflow-hidden bg-gray-50 relative"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onContextMenu={(e) => e.preventDefault()} // Prevent context menu on right click
+        style={{ cursor: isPanning ? 'grabbing' : 'default' }}
+      >
+        {/* Zoom controls */}
+        <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 bg-white rounded-lg shadow-lg p-2 border border-gray-200 zoom-controls">
+          <Button
+            onClick={handleZoomIn}
+            size="sm"
+            variant="ghost"
+            className="p-2"
+            title="Zoom In (Ctrl + Scroll)"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </Button>
+          <Button
+            onClick={handleZoomOut}
+            size="sm"
+            variant="ghost"
+            className="p-2"
+            title="Zoom Out (Ctrl + Scroll)"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </Button>
+          <Button
+            onClick={handleResetView}
+            size="sm"
+            variant="ghost"
+            className="p-2"
+            title="Reset View"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+          <div className="text-xs text-center text-gray-500 px-2 py-1">
+            {Math.round(zoom * 100)}%
+          </div>
+        </div>
+
         {/* Help text overlay */}
         {showHelp && (
           <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-lg max-w-md">
@@ -241,44 +363,57 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
           </div>
         )}
         
-        {/* SVG overlay for connection lines */}
-        <svg
-          className="absolute top-0 left-0 pointer-events-none"
-          width={canvasSize.width}
-          height={canvasSize.height}
-          style={{ zIndex: 0 }}
+        {/* Canvas container - establishes scrollable area */}
+        <div 
+          ref={canvasRef}
+          className="relative mindmap-canvas"
+          style={{ 
+            width: canvasSize.width, 
+            height: canvasSize.height, 
+            minWidth: '100%', 
+            minHeight: '600px',
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+            transition: isPanning ? 'none' : 'transform 0.1s ease-out'
+          }}
         >
-          {connectionLines.map((line, index) => (
-            <line
-              key={index}
-              x1={line.x1}
-              y1={line.y1}
-              x2={line.x2}
-              y2={line.y2}
-              stroke="#9CA3AF"
-              strokeWidth="2"
-              markerEnd="url(#arrowhead)"
-            />
-          ))}
-          <defs>
-            <marker
-              id="arrowhead"
-              markerWidth="10"
-              markerHeight="10"
-              refX="5"
-              refY="5"
-              orient="auto"
-            >
-              <polygon points="0 0, 10 5, 0 10" fill="#9CA3AF" />
-            </marker>
-          </defs>
-        </svg>
+          {/* SVG overlay for connection lines */}
+          <svg
+            className="absolute top-0 left-0 pointer-events-none"
+            width={canvasSize.width}
+            height={canvasSize.height}
+            style={{ zIndex: 0 }}
+          >
+            {connectionLines.map((line, index) => (
+              <line
+                key={index}
+                x1={line.x1}
+                y1={line.y1}
+                x2={line.x2}
+                y2={line.y2}
+                stroke="#9CA3AF"
+                strokeWidth="2"
+                markerEnd="url(#arrowhead)"
+              />
+            ))}
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="10"
+                refX="5"
+                refY="5"
+                orient="auto"
+              >
+                <polygon points="0 0, 10 5, 0 10" fill="#9CA3AF" />
+              </marker>
+            </defs>
+          </svg>
 
-        {/* Root drop zone */}
-        <RootDropZone />
+          {/* Root drop zone */}
+          <RootDropZone width={canvasSize.width} height={canvasSize.height} />
 
-        {/* Render all nodes using calculated positions */}
-        <div className="relative" style={{ width: canvasSize.width, height: canvasSize.height, minHeight: '600px' }}>
+          {/* Render all nodes using calculated positions */}
           {ideas.map((idea) => {
             // Only render if it's a root node, or if its parent is expanded
             const isRoot = !idea.parentId
