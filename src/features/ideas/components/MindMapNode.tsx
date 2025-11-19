@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { MindMapCard } from './MindMapCard'
 import type { Idea, ID } from '../../../core/entities/Idea'
@@ -22,6 +23,7 @@ export function MindMapNode({
   onDelete,
   zoom = 1
 }: MindMapNodeProps) {
+  const [isHovered, setIsHovered] = useState(false)
   const hasChildren = children.length > 0
 
   // Make the node draggable
@@ -55,11 +57,11 @@ export function MindMapNode({
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging ? 1000 : 1
+        zIndex: isDragging ? 1000 : isHovered ? 999 : 1
       }
     : {
         opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging ? 1000 : 1
+        zIndex: isDragging ? 1000 : isHovered ? 999 : 1
       }
 
   return (
@@ -74,6 +76,8 @@ export function MindMapNode({
         ...style
       }}
       className={`${isOver ? 'ring-4 ring-blue-500 ring-offset-2' : ''} transition-all`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div 
         ref={setDraggableRef}
@@ -89,6 +93,7 @@ export function MindMapNode({
             onToggleExpand={() => onToggleExpand(idea.id)}
             onDelete={onDelete}
             zoom={zoom}
+            isHovered={isHovered}
           />
         </div>
       </div>

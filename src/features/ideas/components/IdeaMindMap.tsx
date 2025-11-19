@@ -5,7 +5,7 @@ import { useIdeas } from '../hooks/useIdeas'
 import { buildTree, calculateLayout, wouldCreateCircularReference } from '../utils/mindMapLayout'
 import type { ID, Idea } from '../../../core/entities/Idea'
 import { Button } from '../../../shared/components/ui'
-import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, Trash2 } from 'lucide-react'
 
 function RootDropZone({ width, height }: { width: number; height: number }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -91,6 +91,17 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
     setZoom(1)
     setPan({ x: 0, y: 0 })
   }, [])
+
+  const handleClearAll = useCallback(async () => {
+    if (window.confirm('Are you sure you want to delete all ideas? This action cannot be undone.')) {
+      // Create a copy of idea IDs to avoid issues with array mutation during deletion
+      const ideaIds = ideas.map(idea => idea.id)
+      // Delete all ideas
+      for (const id of ideaIds) {
+        await deleteIdea(id)
+      }
+    }
+  }, [ideas, deleteIdea])
 
   // Mouse wheel zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -344,6 +355,16 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
           <div className="text-xs text-center text-gray-500 px-2 py-1">
             {Math.round(zoom * 100)}%
           </div>
+          <div className="border-t border-gray-200 my-1"></div>
+          <Button
+            onClick={handleClearAll}
+            size="sm"
+            variant="ghost"
+            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Clear All Ideas"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Help text overlay */}

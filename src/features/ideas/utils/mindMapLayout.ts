@@ -15,8 +15,8 @@ export interface LayoutNode {
 
 const NODE_WIDTH = 350 // Increased to accommodate larger cards at low zoom
 const NODE_HEIGHT = 140 // Slightly increased for better text fit
-const HORIZONTAL_SPACING = 200 // Reduced spacing between nodes
-const VERTICAL_SPACING = 120 // Reduced vertical spacing
+const HORIZONTAL_SPACING = 80 // Spacing between nodes horizontally
+const VERTICAL_SPACING = 60 // Spacing between nodes vertically
 
 /**
  * Builds a tree structure from a flat list of ideas
@@ -206,7 +206,7 @@ export function calculateLayout(rootNodes: LayoutNode[], allIdeas: Idea[]): Map<
       // Calculate spacing between root nodes
       if (index > 0) {
         const prevRootWidth = calculateSubtreeWidth(rootNodes[index - 1])
-        rootX += prevRootWidth + HORIZONTAL_SPACING * 2
+        rootX += prevRootWidth + HORIZONTAL_SPACING * 1.5
       }
     }
     
