@@ -77,9 +77,40 @@ export function useIdeas() {
     }
   }, [repository, loadIdeas])
 
+  /**
+   * Recursively finds all descendant IDs of a given idea
+   */
+  const getAllDescendantIds = useCallback((parentId: string, allIdeas: Idea[]): string[] => {
+    const descendantIds: string[] = []
+    const children = allIdeas.filter(idea => idea.parentId === parentId)
+    
+    for (const child of children) {
+      descendantIds.push(child.id)
+      // Recursively get descendants of this child
+      const childDescendants = getAllDescendantIds(child.id, allIdeas)
+      descendantIds.push(...childDescendants)
+    }
+    
+    return descendantIds
+  }, [])
+
   const deleteIdea = useCallback(async (id: string): Promise<void> => {
     try {
-      await repository.delete(id)
+      // Get all ideas to find descendants
+      const allIdeas = await repository.getAll()
+      
+      // Find all descendant IDs recursively
+      const descendantIds = getAllDescendantIds(id, allIdeas)
+      
+      // Delete all descendants first (in reverse order to handle deep hierarchies)
+      // Then delete the parent
+      const idsToDelete = [...descendantIds, id]
+      
+      // Delete all ideas (descendants and parent)
+      for (const ideaId of idsToDelete) {
+        await repository.delete(ideaId)
+      }
+      
       await loadIdeas()
       // Dispatch event to notify other instances
       window.dispatchEvent(new Event(IDEAS_UPDATED_EVENT))
@@ -88,7 +119,7 @@ export function useIdeas() {
       setError(errorMessage)
       throw err
     }
-  }, [repository, loadIdeas])
+  }, [repository, loadIdeas, getAllDescendantIds])
 
   return {
     ideas,

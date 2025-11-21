@@ -11,6 +11,7 @@ interface MindMapNodeProps {
   isExpanded: boolean
   onToggleExpand: (id: ID) => void
   onDelete: (id: ID) => void
+  onUnnest?: (id: ID) => void
   zoom?: number
 }
 
@@ -21,6 +22,7 @@ export function MindMapNode({
   isExpanded,
   onToggleExpand,
   onDelete,
+  onUnnest,
   zoom = 1
 }: MindMapNodeProps) {
   const [isHovered, setIsHovered] = useState(false)
@@ -92,6 +94,7 @@ export function MindMapNode({
             isExpanded={isExpanded}
             onToggleExpand={() => onToggleExpand(idea.id)}
             onDelete={onDelete}
+            onUnnest={onUnnest}
             zoom={zoom}
             isHovered={isHovered}
           />

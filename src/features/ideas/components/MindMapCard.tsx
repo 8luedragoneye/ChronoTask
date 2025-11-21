@@ -1,6 +1,6 @@
 import { Button, Card } from '../../../shared/components/ui'
 import type { Idea } from '../../../core/entities/Idea'
-import { Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Trash2, ChevronDown, ChevronRight, Unlink } from 'lucide-react'
 
 interface MindMapCardProps {
   idea: Idea
@@ -8,14 +8,36 @@ interface MindMapCardProps {
   isExpanded: boolean
   onToggleExpand: () => void
   onDelete: (id: string) => void
+  onUnnest?: (id: string) => void
   zoom?: number
   isHovered?: boolean
 }
 
-export function MindMapCard({ idea, hasChildren, isExpanded, onToggleExpand, onDelete, zoom = 1, isHovered = false }: MindMapCardProps) {
+export function MindMapCard({ idea, hasChildren, isExpanded, onToggleExpand, onDelete, onUnnest, zoom = 1, isHovered = false }: MindMapCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onDelete(idea.id)
+  }
+
+  const handleUnnest = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (onUnnest) {
+      console.log('Unnesting idea:', idea.id, idea.name)
+      onUnnest(idea.id)
+    }
+  }
+
+  const handleUnnestPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation()
+  }
+
+  // Check if button should show
+  const shouldShowUnnest = idea.parentId !== undefined && idea.parentId !== null && onUnnest !== undefined
+  
+  // Debug logging (remove after testing)
+  if (idea.parentId) {
+    console.log('Idea has parent:', idea.name, 'parentId:', idea.parentId, 'onUnnest:', !!onUnnest, 'shouldShow:', shouldShowUnnest)
   }
 
   // Get topic color (simple hash-based color for now)
@@ -123,15 +145,31 @@ export function MindMapCard({ idea, hasChildren, isExpanded, onToggleExpand, onD
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDelete}
-          className="flex-shrink-0 p-1 h-auto"
-          aria-label={`Delete idea ${idea.name}`}
-        >
-          <Trash2 className="w-3 h-3 text-red-600" />
-        </Button>
+        <div className="flex flex-shrink-0 gap-1 items-center">
+          {shouldShowUnnest && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUnnest}
+              onPointerDown={handleUnnestPointerDown}
+              className="p-1 h-auto hover:bg-blue-50 flex-shrink-0"
+              aria-label={`Unnest ${idea.name} from parent`}
+              title="Unnest from parent"
+            >
+              <Unlink className="w-4 h-4 text-blue-600" />
+            </Button>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="p-1 h-auto"
+            aria-label={`Delete idea ${idea.name}`}
+          >
+            <Trash2 className="w-3 h-3 text-red-600" />
+          </Button>
+        </div>
       </div>
     </Card>
   )

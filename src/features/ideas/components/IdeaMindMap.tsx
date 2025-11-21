@@ -248,7 +248,49 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
     }
     
     setDragStartPosition(null)
-  }, [ideas, allIdeasForCheck, updateIdea, dragStartPosition])
+  }, [ideas, allIdeasForCheck, updateIdea, dragStartPosition, zoom])
+
+  const handleUnnest = useCallback(async (id: ID) => {
+    console.log('handleUnnest called with id:', id)
+    const idea = ideas.find(i => i.id === id)
+    console.log('Found idea:', idea, 'has parentId:', idea?.parentId)
+    if (idea?.parentId) {
+      try {
+        // Get current position to preserve it when unnested
+        // Use calculated position from layout, or fallback to saved position
+        const calculatedPosition = positions.get(id)
+        const savedPositionX = idea.positionX
+        const savedPositionY = idea.positionY
+        
+        console.log('Calculated position:', calculatedPosition)
+        console.log('Saved position:', savedPositionX, savedPositionY)
+        
+        if (calculatedPosition) {
+          console.log('Unnesting with calculated position:', calculatedPosition.x, calculatedPosition.y)
+          await updateIdea(id, {
+            parentId: undefined,
+            positionX: calculatedPosition.x,
+            positionY: calculatedPosition.y
+          })
+        } else if (savedPositionX !== undefined && savedPositionY !== undefined) {
+          console.log('Unnesting with saved position:', savedPositionX, savedPositionY)
+          await updateIdea(id, {
+            parentId: undefined,
+            positionX: savedPositionX,
+            positionY: savedPositionY
+          })
+        } else {
+          console.log('Unnesting without position - will use layout algorithm')
+          await updateIdea(id, { parentId: undefined })
+        }
+        console.log('Unnest complete')
+      } catch (error) {
+        console.error('Error unnesting idea:', error)
+      }
+    } else {
+      console.log('Idea has no parentId, nothing to do')
+    }
+  }, [ideas, positions, updateIdea])
 
   const activeIdea = activeId ? ideas.find(i => i.id === activeId.replace('idea-', '')) : null
 
@@ -456,6 +498,7 @@ export function IdeaMindMap({ ideas: providedIdeas }: IdeaMindMapProps = {}) {
                 isExpanded={expandedNodes.has(idea.id)}
                 onToggleExpand={toggleExpand}
                 onDelete={deleteIdea}
+                onUnnest={handleUnnest}
                 zoom={zoom}
               />
             )
